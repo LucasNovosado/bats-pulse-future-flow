@@ -17,13 +17,13 @@ const App = () => {
   useEffect(() => {
     // Initialize Parse inside useEffect to ensure it runs in browser environment
     try {
-      // Credenciais reais do Back4App
+      // Credenciais corretas do Back4App
       Parse.initialize(
-        "KEsOrFKDX8Wo0sNiyG7zr0vEJ3CTkDdTS26Zhgx0", // Application ID - seu ID real
-        "yDv8gWukklSfT6JJMbx2CQoQdDTroxnrOKhna1rc"   // JavaScript Key - sua key real
+        "Z6OcLGYwIShY2cKBwsb4smZDr6b4zJ5crKNgyZGv", // Application ID correto
+        "IxZMOzDHJ0kZmYknLx7xxRfQ4lCwojPjiqA3sYM8"  // JavaScript Key correto
       );
       Parse.serverURL = "https://parseapi.back4app.com/";
-      console.log("Parse initialized successfully with real credentials");
+      console.log("Parse initialized successfully with correct credentials");
     } catch (error) {
       console.error("Error initializing Parse:", error);
     }
