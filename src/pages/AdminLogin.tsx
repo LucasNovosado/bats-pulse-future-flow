@@ -25,7 +25,7 @@ const AdminLogin = () => {
         // Simple check to see if Parse is initialized
         if (Parse.applicationId) {
           setParseReady(true);
-          console.log("Parse is ready in AdminLogin");
+          console.log("Parse is ready in AdminLogin with App ID:", Parse.applicationId);
         } else {
           // If not ready, check again after a short delay
           console.log("Parse not ready yet, checking again...");
@@ -48,7 +48,10 @@ const AdminLogin = () => {
       // Check if user is already logged in
       const currentUser = Parse.User.current();
       if (currentUser) {
+        console.log("User already logged in:", currentUser.getUsername());
         navigate("/admin");
+      } else {
+        console.log("No user currently logged in");
       }
     } catch (error) {
       console.error("Error checking current user:", error);
@@ -84,9 +87,11 @@ const AdminLogin = () => {
     
     try {
       console.log(`Tentativa de login ${loginAttempt + 1} para usuário: ${username}`);
+      console.log("Verificando credenciais no Back4App com App ID:", Parse.applicationId);
       
       // Verificando credenciais na Back4App
-      await Parse.User.logIn(username, password);
+      const user = await Parse.User.logIn(username, password);
+      console.log("Login bem-sucedido, objeto de usuário:", user.id);
       
       toast({
         title: "Login realizado com sucesso",
@@ -101,9 +106,24 @@ const AdminLogin = () => {
         console.log(`Código de erro Parse: ${error.code}`);
       }
       
+      if (error.message) {
+        console.log(`Mensagem de erro: ${error.message}`);
+      }
+      
+      let errorMessage = "Credenciais inválidas. Verifique seu usuário e senha.";
+      
+      // Mensagens específicas para erros comuns
+      if (error.code === 101) {
+        errorMessage = "Usuário ou senha inválidos. Verifique suas credenciais.";
+      } else if (error.code === 209) {
+        errorMessage = "Sessão inválida. Por favor, faça login novamente.";
+      } else if (error.message && error.message.includes("invalid JSON")) {
+        errorMessage = "Erro de comunicação com o servidor. Verifique sua conexão.";
+      }
+      
       toast({
         title: "Erro ao fazer login",
-        description: "Credenciais inválidas. Verifique seu usuário e senha.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
