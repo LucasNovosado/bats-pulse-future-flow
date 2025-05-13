@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import Parse from "parse";
 import { Button } from "@/components/ui/button";
@@ -52,10 +51,31 @@ const PartnersList: React.FC<PartnersListProps> = ({
   const [totalPages, setTotalPages] = useState(1);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [partnerToDelete, setPartnerToDelete] = useState<any>(null);
+  const [parseReady, setParseReady] = useState(false);
   const itemsPerPage = 10;
   const { toast } = useToast();
 
+  // Check if Parse is initialized
+  useEffect(() => {
+    const checkParseInitialization = () => {
+      try {
+        // Simple check to see if Parse is initialized
+        if (Parse.applicationId) {
+          setParseReady(true);
+        } else {
+          // If not ready, check again after a short delay
+          setTimeout(checkParseInitialization, 500);
+        }
+      } catch (error) {
+        setTimeout(checkParseInitialization, 500);
+      }
+    };
+    
+    checkParseInitialization();
+  }, []);
+
   const fetchPartners = async () => {
+    if (!parseReady) return;
     setLoading(true);
     
     try {
@@ -105,8 +125,10 @@ const PartnersList: React.FC<PartnersListProps> = ({
   };
 
   useEffect(() => {
-    fetchPartners();
-  }, [currentPage, searchTerm, filterState, filterCity, showFeaturedOnly]);
+    if (parseReady) {
+      fetchPartners();
+    }
+  }, [currentPage, searchTerm, filterState, filterCity, showFeaturedOnly, parseReady]);
 
   const handleDeleteClick = (partner: any) => {
     setPartnerToDelete(partner);

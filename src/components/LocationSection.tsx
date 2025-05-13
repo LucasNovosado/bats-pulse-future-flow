@@ -11,11 +11,33 @@ const LocationSection = () => {
   const [locations, setLocations] = useState<any[]>([]);
   const [states, setStates] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError, setParseReady] = useState<string | null>(null);
+  const [parseReady, setParseReady] = useState(false);
+  
+  // Check if Parse is initialized
+  useEffect(() => {
+    const checkParseInitialization = () => {
+      try {
+        // Simple check to see if Parse is initialized
+        if (Parse.applicationId) {
+          setParseReady(true);
+        } else {
+          // If not ready, check again after a short delay
+          setTimeout(checkParseInitialization, 500);
+        }
+      } catch (error) {
+        setTimeout(checkParseInitialization, 500);
+      }
+    };
+    
+    checkParseInitialization();
+  }, []);
   
   useEffect(() => {
-    fetchLocations();
-  }, []);
+    if (parseReady) {
+      fetchLocations();
+    }
+  }, [parseReady]);
   
   const fetchLocations = async () => {
     setLoading(true);

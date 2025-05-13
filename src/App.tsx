@@ -11,19 +11,21 @@ import Admin from "./pages/Admin";
 import AdminLogin from "./pages/AdminLogin";
 import NotFound from "./pages/NotFound";
 
-// Initialize Parse
-Parse.initialize(
-  "Z6OcLGYwIShY2cKBwsb4smZDr6b4zJ5crKNgyZGv", // Application ID
-  "IxZMOzDHJ0kZmYknLx7xxRfQ4lCwojPjiqA3sYM8"  // JavaScript Key
-);
-Parse.serverURL = "https://parseapi.back4app.com/";
-
 const queryClient = new QueryClient();
 
 const App = () => {
   useEffect(() => {
-    // Any global initialization can go here
-    console.log("App initialized");
+    // Initialize Parse inside useEffect to ensure it runs in browser environment
+    try {
+      Parse.initialize(
+        "Z6OcLGYwIShY2cKBwsb4smZDr6b4zJ5crKNgyZGv", // Application ID
+        "IxZMOzDHJ0kZmYknLx7xxRfQ4lCwojPjiqA3sYM8"  // JavaScript Key
+      );
+      Parse.serverURL = "https://parseapi.back4app.com/";
+      console.log("Parse initialized successfully");
+    } catch (error) {
+      console.error("Error initializing Parse:", error);
+    }
   }, []);
 
   return (

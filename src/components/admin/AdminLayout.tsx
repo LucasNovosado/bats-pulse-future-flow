@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Parse from "parse";
 import { useNavigate } from "react-router-dom";
 import PartnersList from "./PartnersList";
@@ -17,10 +17,31 @@ const AdminLayout = () => {
   const [filterState, setFilterState] = useState("");
   const [filterCity, setFilterCity] = useState("");
   const [showFeaturedOnly, setShowFeaturedOnly] = useState(false);
+  const [parseReady, setParseReady] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Check if Parse is initialized
+  useEffect(() => {
+    const checkParseInitialization = () => {
+      try {
+        // Simple check to see if Parse is initialized
+        if (Parse.applicationId) {
+          setParseReady(true);
+        } else {
+          // If not ready, check again after a short delay
+          setTimeout(checkParseInitialization, 500);
+        }
+      } catch (error) {
+        setTimeout(checkParseInitialization, 500);
+      }
+    };
+    
+    checkParseInitialization();
+  }, []);
+
   const handleLogout = async () => {
+    if (!parseReady) return;
     try {
       await Parse.User.logOut();
       toast({
