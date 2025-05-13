@@ -1,85 +1,67 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { MapPin, Search, Phone, Link } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-
-// Mock data for store locations
-const locations = [
-  {
-    id: 1,
-    name: "SuperMarket Express",
-    address: "Av. Paulista, 1000",
-    city: "São Paulo",
-    state: "SP",
-    phone: "(11) 99999-9999",
-    instagram: "@supermarket",
-    featured: true
-  },
-  {
-    id: 2,
-    name: "Drogaria Premium",
-    address: "Rua Augusta, 500",
-    city: "São Paulo",
-    state: "SP",
-    phone: "(11) 88888-8888",
-    instagram: "@drogariapremium",
-    featured: false
-  },
-  {
-    id: 3,
-    name: "Convenience Store 24h",
-    address: "Av. Copacabana, 300",
-    city: "Rio de Janeiro",
-    state: "RJ",
-    phone: "(21) 77777-7777",
-    instagram: "@convenience24h",
-    featured: true
-  },
-  {
-    id: 4,
-    name: "Mercado Central",
-    address: "Rua das Flores, 200",
-    city: "Belo Horizonte",
-    state: "MG",
-    phone: "(31) 66666-6666",
-    instagram: "@mercadocentral",
-    featured: false
-  },
-  {
-    id: 5,
-    name: "Loja de Conveniência EcoGas",
-    address: "Av. Amazonas, 500",
-    city: "Manaus",
-    state: "AM",
-    phone: "(92) 55555-5555",
-    instagram: "@ecogas",
-    featured: true
-  },
-  {
-    id: 6,
-    name: "Empório Metropolitano",
-    address: "Rua Sergipe, 100",
-    city: "Brasília",
-    state: "DF",
-    phone: "(61) 44444-4444",
-    instagram: "@emporiometro",
-    featured: false
-  },
-];
+import Parse from "parse";
 
 const LocationSection = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterState, setFilterState] = useState("");
+  const [locations, setLocations] = useState<any[]>([]);
+  const [states, setStates] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  useEffect(() => {
+    fetchLocations();
+  }, []);
+  
+  const fetchLocations = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // Create a Parse query for Partner class
+      const Partner = Parse.Object.extend("Partner");
+      const query = new Parse.Query(Partner);
+      
+      // Only get active partners
+      query.equalTo("status", true);
+      
+      // Sort by name (ascending)
+      query.ascending("name");
+      
+      // Execute the query
+      const results = await query.find();
+      setLocations(results);
+      
+      // Extract unique states for filtering
+      const uniqueStates = Array.from(
+        new Set(results.map(partner => partner.get("state")))
+      ).filter(state => !!state) as string[];
+      
+      setStates(uniqueStates.sort());
+    } catch (error: any) {
+      console.error("Error fetching locations:", error);
+      setError("Não foi possível carregar os revendedores. Tente novamente mais tarde.");
+    } finally {
+      setLoading(false);
+    }
+  };
   
   const filteredLocations = locations.filter(location => {
-    const matchesSearch = location.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          location.city.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesState = filterState ? location.state === filterState : true;
+    const name = location.get("name") || "";
+    const city = location.get("city") || "";
+    const state = location.get("state") || "";
+    
+    const matchesSearch = 
+      name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      city.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesState = filterState ? state === filterState : true;
+    
     return matchesSearch && matchesState;
   });
-
-  const states = [...new Set(locations.map(location => location.state))];
 
   return (
     <section className="relative py-24 bg-bats-dark overflow-hidden">
@@ -118,49 +100,87 @@ const LocationSection = () => {
           </select>
         </div>
 
-        {/* Store cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredLocations.map((location) => (
-            <div 
-              key={location.id} 
-              className={`glow-card p-6 ${
-                location.featured ? 'border-bats-yellow/30' : 'border-gray-800'
-              }`}
-            >
-              {location.featured && (
-                <div className="absolute -top-3 -right-3 bg-bats-yellow text-bats-dark px-3 py-1 rounded-full text-sm font-bold shadow-lg transform rotate-12">
-                  Destaque
-                </div>
-              )}
-              <h3 className="text-xl font-bold mb-2 text-white">
-                {location.name}
-              </h3>
-              <div className="flex items-start mb-2">
-                <MapPin className="w-5 h-5 text-bats-blue mr-2 mt-1 flex-shrink-0" />
-                <p className="text-gray-300">
-                  {location.address}, {location.city} - {location.state}
-                </p>
-              </div>
-              <div className="flex items-center mb-2">
-                <Phone className="w-5 h-5 text-bats-blue mr-2 flex-shrink-0" />
-                <p className="text-gray-300">{location.phone}</p>
-              </div>
-              <div className="flex items-center mt-4">
-                <Link className="w-5 h-5 text-bats-yellow mr-2 flex-shrink-0" />
-                <a 
-                  href={`https://instagram.com/${location.instagram.replace('@', '')}`} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-bats-yellow hover:underline"
-                >
-                  {location.instagram}
-                </a>
-              </div>
-            </div>
-          ))}
-        </div>
+        {/* Loading state */}
+        {loading && (
+          <div className="text-center py-12">
+            <div className="inline-block h-8 w-8 border-4 border-bats-yellow/30 border-t-bats-yellow rounded-full animate-spin mb-4"></div>
+            <p className="text-gray-400">Carregando revendedores...</p>
+          </div>
+        )}
 
-        {filteredLocations.length === 0 && (
+        {/* Error state */}
+        {error && (
+          <div className="text-center py-12">
+            <div className="bg-red-900/20 border border-red-800 p-4 rounded-lg max-w-md mx-auto">
+              <p className="text-red-400">{error}</p>
+              <Button 
+                onClick={fetchLocations}
+                variant="outline"
+                className="mt-4 border-red-800 text-red-300 hover:bg-red-900/30"
+              >
+                Tentar novamente
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Store cards */}
+        {!loading && !error && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredLocations.map((location) => (
+              <div 
+                key={location.id} 
+                className={`glow-card p-6 ${
+                  location.get("featured") ? 'border-bats-yellow/30' : 'border-gray-800'
+                }`}
+              >
+                {location.get("featured") && (
+                  <div className="absolute -top-3 -right-3 bg-bats-yellow text-bats-dark px-3 py-1 rounded-full text-sm font-bold shadow-lg transform rotate-12">
+                    Destaque
+                  </div>
+                )}
+                <h3 className="text-xl font-bold mb-2 text-white">
+                  {location.get("name")}
+                </h3>
+                <div className="flex items-start mb-2">
+                  <MapPin className="w-5 h-5 text-bats-blue mr-2 mt-1 flex-shrink-0" />
+                  <p className="text-gray-300">
+                    {location.get("address")}, {location.get("district") && `${location.get("district")}, `} 
+                    {location.get("city")} - {location.get("state")}
+                  </p>
+                </div>
+                {location.get("phone") && (
+                  <div className="flex items-center mb-2">
+                    <Phone className="w-5 h-5 text-bats-blue mr-2 flex-shrink-0" />
+                    <p className="text-gray-300">{location.get("phone")}</p>
+                  </div>
+                )}
+                {location.get("googleMapsUrl") && (
+                  <div className="flex items-center mt-4">
+                    <Link className="w-5 h-5 text-bats-yellow mr-2 flex-shrink-0" />
+                    <a 
+                      href={location.get("googleMapsUrl")} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-bats-yellow hover:underline"
+                    >
+                      Ver no Google Maps
+                    </a>
+                  </div>
+                )}
+                {location.get("category") && (
+                  <div className="mt-3 pt-3 border-t border-gray-800">
+                    <span className="inline-block px-3 py-1 text-xs bg-bats-blue/20 text-bats-blue rounded-full">
+                      {location.get("category")}
+                    </span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!loading && !error && filteredLocations.length === 0 && (
           <div className="text-center py-12">
             <p className="text-lg text-gray-400">Nenhum resultado encontrado. Tente outra busca.</p>
           </div>
