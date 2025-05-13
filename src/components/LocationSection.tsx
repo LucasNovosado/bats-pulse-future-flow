@@ -11,7 +11,7 @@ const LocationSection = () => {
   const [locations, setLocations] = useState<any[]>([]);
   const [states, setStates] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError, setParseReady] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [parseReady, setParseReady] = useState(false);
   
   // Check if Parse is initialized
