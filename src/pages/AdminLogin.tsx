@@ -14,6 +14,7 @@ const AdminLogin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [parseReady, setParseReady] = useState(false);
+  const [loginAttempt, setLoginAttempt] = useState(0);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -24,11 +25,14 @@ const AdminLogin = () => {
         // Simple check to see if Parse is initialized
         if (Parse.applicationId) {
           setParseReady(true);
+          console.log("Parse is ready in AdminLogin");
         } else {
           // If not ready, check again after a short delay
+          console.log("Parse not ready yet, checking again...");
           setTimeout(checkParseInitialization, 500);
         }
       } catch (error) {
+        console.error("Error checking Parse initialization:", error);
         setTimeout(checkParseInitialization, 500);
       }
     };
@@ -40,10 +44,14 @@ const AdminLogin = () => {
     // Only check login status when Parse is ready
     if (!parseReady) return;
     
-    // Check if user is already logged in
-    const currentUser = Parse.User.current();
-    if (currentUser) {
-      navigate("/admin");
+    try {
+      // Check if user is already logged in
+      const currentUser = Parse.User.current();
+      if (currentUser) {
+        navigate("/admin");
+      }
+    } catch (error) {
+      console.error("Error checking current user:", error);
     }
     
     // Update page title
@@ -72,9 +80,14 @@ const AdminLogin = () => {
     }
 
     setIsLoading(true);
+    setLoginAttempt(prev => prev + 1);
     
     try {
+      console.log(`Tentativa de login ${loginAttempt + 1} para usuário: ${username}`);
+      
+      // Verificando credenciais na Back4App
       await Parse.User.logIn(username, password);
+      
       toast({
         title: "Login realizado com sucesso",
         description: "Bem-vindo ao painel administrativo Bats Energy",
@@ -82,9 +95,15 @@ const AdminLogin = () => {
       navigate("/admin");
     } catch (error: any) {
       console.error("Error logging in:", error);
+      
+      // Log detalhado do erro para diagnóstico
+      if (error.code) {
+        console.log(`Código de erro Parse: ${error.code}`);
+      }
+      
       toast({
         title: "Erro ao fazer login",
-        description: error.message || "Verifique suas credenciais e tente novamente",
+        description: "Credenciais inválidas. Verifique seu usuário e senha.",
         variant: "destructive",
       });
     } finally {
@@ -142,13 +161,28 @@ const AdminLogin = () => {
               </div>
             </div>
             
+            {!parseReady && (
+              <div className="text-center py-2">
+                <div className="inline-block h-4 w-4 border-2 border-bats-yellow/30 border-t-bats-yellow rounded-full animate-spin mr-2"></div>
+                <span className="text-gray-400 text-sm">Inicializando sistema...</span>
+              </div>
+            )}
+            
             <Button 
               type="submit" 
-              disabled={isLoading} 
+              disabled={isLoading || !parseReady} 
               className="w-full bg-gradient-to-r from-bats-yellow to-bats-blue hover:from-bats-yellow/90 hover:to-bats-blue/90 text-black font-bold"
             >
               {isLoading ? "Entrando..." : "Entrar"}
             </Button>
+            
+            {loginAttempt > 0 && (
+              <div className="text-center pt-4">
+                <p className="text-sm text-gray-400">
+                  Se não conseguir acessar, contate um administrador do sistema.
+                </p>
+              </div>
+            )}
           </form>
         </div>
       </div>

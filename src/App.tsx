@@ -18,8 +18,8 @@ const App = () => {
     // Initialize Parse inside useEffect to ensure it runs in browser environment
     try {
       Parse.initialize(
-        "Z6OcLGYwIShY2cKBwsb4smZDr6b4zJ5crKNgyZGv", // Application ID
-        "IxZMOzDHJ0kZmYknLx7xxRfQ4lCwojPjiqA3sYM8"  // JavaScript Key
+        "batsenergydrinkappid", // Application ID - usando ID genérico
+        "batsenergyjskey"       // JavaScript Key - usando key genérica
       );
       Parse.serverURL = "https://parseapi.back4app.com/";
       console.log("Parse initialized successfully");
