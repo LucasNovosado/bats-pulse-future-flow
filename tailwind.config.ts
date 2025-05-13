@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,7 +62,17 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				bats: {
+					yellow: '#F8E71C',
+					blue: '#0056FF',
+					neon: '#BF00FF',
+					dark: '#0A0A1A',
+					light: '#F8F8FF'
 				}
+			},
+			fontFamily: {
+				poppins: ['Poppins', 'sans-serif'],
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -84,12 +95,64 @@ export default {
 					to: {
 						height: '0'
 					}
-				}
+				},
+				'pulse-glow': {
+					'0%, 100%': {
+						opacity: '1',
+						transform: 'scale(1)',
+						filter: 'brightness(1)',
+					},
+					'50%': {
+						opacity: '0.85',
+						transform: 'scale(1.05)',
+						filter: 'brightness(1.2)',
+					},
+				},
+				'float': {
+					'0%, 100%': {
+						transform: 'translateY(0)',
+					},
+					'50%': {
+						transform: 'translateY(-10px)',
+					},
+				},
+				'text-slide': {
+					'0%': { transform: 'translateX(0%)' },
+					'100%': { transform: 'translateX(-100%)' },
+				},
+				'particles': {
+					'0%, 100%': {
+						opacity: '0.3',
+						transform: 'translateY(0) translateX(0)',
+					},
+					'25%': {
+						opacity: '0.8',
+						transform: 'translateY(-15px) translateX(15px)',
+					},
+					'50%': {
+						opacity: '0.4',
+						transform: 'translateY(-25px) translateX(5px)',
+					},
+					'75%': {
+						opacity: '0.6',
+						transform: 'translateY(-15px) translateX(-15px)',
+					},
+				},
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
-			}
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'pulse-glow': 'pulse-glow 2s ease-in-out infinite',
+				'float': 'float 6s ease-in-out infinite',
+				'text-slide': 'text-slide 20s linear infinite',
+				'particles': 'particles 8s ease-in-out infinite',
+			},
+			backgroundImage: {
+				'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+				'bats-gradient': 'linear-gradient(to bottom, #F8E71C, #0056FF)',
+				'hero-pattern': 'url("/bg-pattern.svg")',
+				'glow-conic': 'conic-gradient(from 180deg at 50% 50%, #F8E71C, #0056FF)',
+			},
 		}
 	},
 	plugins: [require("tailwindcss-animate")],
