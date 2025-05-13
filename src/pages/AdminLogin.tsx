@@ -13,10 +13,33 @@ const AdminLogin = () => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [parseReady, setParseReady] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Check if Parse is initialized
   useEffect(() => {
+    const checkParseInitialization = () => {
+      try {
+        // Simple check to see if Parse is initialized
+        if (Parse.applicationId) {
+          setParseReady(true);
+        } else {
+          // If not ready, check again after a short delay
+          setTimeout(checkParseInitialization, 500);
+        }
+      } catch (error) {
+        setTimeout(checkParseInitialization, 500);
+      }
+    };
+    
+    checkParseInitialization();
+  }, []);
+
+  useEffect(() => {
+    // Only check login status when Parse is ready
+    if (!parseReady) return;
+    
     // Check if user is already logged in
     const currentUser = Parse.User.current();
     if (currentUser) {
@@ -25,10 +48,19 @@ const AdminLogin = () => {
     
     // Update page title
     document.title = "Login Administrativo | Bats Energy Drink";
-  }, [navigate]);
+  }, [navigate, parseReady]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!parseReady) {
+      toast({
+        title: "Sistema inicializando",
+        description: "Aguarde enquanto o sistema é inicializado",
+        variant: "destructive",
+      });
+      return;
+    }
     
     if (!username || !password) {
       toast({
