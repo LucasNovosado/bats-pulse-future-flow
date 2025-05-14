@@ -5,7 +5,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useEffect } from "react";
-import Parse from "parse";
 import Index from "./pages/Index";
 import Admin from "./pages/Admin";
 import AdminLogin from "./pages/AdminLogin";
@@ -14,21 +13,6 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const App = () => {
-  useEffect(() => {
-    // Initialize Parse inside useEffect to ensure it runs in browser environment
-    try {
-      // Credenciais corretas do Back4App
-      Parse.initialize(
-        "Z6OcLGYwIShY2cKBwsb4smZDr6b4zJ5crKNgyZGv", // Application ID correto
-        "IxZMOzDHJ0kZmYknLx7xxRfQ4lCwojPjiqA3sYM8"  // JavaScript Key correto
-      );
-      Parse.serverURL = "https://parseapi.back4app.com/";
-      console.log("Parse initialized successfully with correct credentials");
-    } catch (error) {
-      console.error("Error initializing Parse:", error);
-    }
-  }, []);
-
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>

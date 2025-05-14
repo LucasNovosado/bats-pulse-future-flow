@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { MapPin, Search, Phone, Link } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import Parse from "parse";
+import { supabase } from "@/integrations/supabase/client";
 
 const LocationSection = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -12,55 +12,30 @@ const LocationSection = () => {
   const [states, setStates] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [parseReady, setParseReady] = useState(false);
   
-  // Check if Parse is initialized
   useEffect(() => {
-    const checkParseInitialization = () => {
-      try {
-        // Simple check to see if Parse is initialized
-        if (Parse.applicationId) {
-          setParseReady(true);
-        } else {
-          // If not ready, check again after a short delay
-          setTimeout(checkParseInitialization, 500);
-        }
-      } catch (error) {
-        setTimeout(checkParseInitialization, 500);
-      }
-    };
-    
-    checkParseInitialization();
+    fetchLocations();
   }, []);
-  
-  useEffect(() => {
-    if (parseReady) {
-      fetchLocations();
-    }
-  }, [parseReady]);
   
   const fetchLocations = async () => {
     setLoading(true);
     setError(null);
     
     try {
-      // Create a Parse query for Partner class
-      const Partner = Parse.Object.extend("Partner");
-      const query = new Parse.Query(Partner);
+      // Buscar parceiros ativos do Supabase
+      const { data, error } = await supabase
+        .from("partners")
+        .select("*")
+        .eq("status", true)
+        .order("name");
       
-      // Only get active partners
-      query.equalTo("status", true);
+      if (error) throw error;
       
-      // Sort by name (ascending)
-      query.ascending("name");
+      setLocations(data || []);
       
-      // Execute the query
-      const results = await query.find();
-      setLocations(results);
-      
-      // Extract unique states for filtering
+      // Extrair estados únicos para filtragem
       const uniqueStates = Array.from(
-        new Set(results.map(partner => partner.get("state")))
+        new Set(data?.map(partner => partner.state) || [])
       ).filter(state => !!state) as string[];
       
       setStates(uniqueStates.sort());
@@ -73,9 +48,9 @@ const LocationSection = () => {
   };
   
   const filteredLocations = locations.filter(location => {
-    const name = location.get("name") || "";
-    const city = location.get("city") || "";
-    const state = location.get("state") || "";
+    const name = location.name || "";
+    const city = location.city || "";
+    const state = location.state || "";
     
     const matchesSearch = 
       name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -153,35 +128,35 @@ const LocationSection = () => {
               <div 
                 key={location.id} 
                 className={`glow-card p-6 ${
-                  location.get("featured") ? 'border-bats-yellow/30' : 'border-gray-800'
+                  location.featured ? 'border-bats-yellow/30' : 'border-gray-800'
                 }`}
               >
-                {location.get("featured") && (
+                {location.featured && (
                   <div className="absolute -top-3 -right-3 bg-bats-yellow text-bats-dark px-3 py-1 rounded-full text-sm font-bold shadow-lg transform rotate-12">
                     Destaque
                   </div>
                 )}
                 <h3 className="text-xl font-bold mb-2 text-white">
-                  {location.get("name")}
+                  {location.name}
                 </h3>
                 <div className="flex items-start mb-2">
                   <MapPin className="w-5 h-5 text-bats-blue mr-2 mt-1 flex-shrink-0" />
                   <p className="text-gray-300">
-                    {location.get("address")}, {location.get("district") && `${location.get("district")}, `} 
-                    {location.get("city")} - {location.get("state")}
+                    {location.address}, {location.district && `${location.district}, `} 
+                    {location.city} - {location.state}
                   </p>
                 </div>
-                {location.get("phone") && (
+                {location.phone && (
                   <div className="flex items-center mb-2">
                     <Phone className="w-5 h-5 text-bats-blue mr-2 flex-shrink-0" />
-                    <p className="text-gray-300">{location.get("phone")}</p>
+                    <p className="text-gray-300">{location.phone}</p>
                   </div>
                 )}
-                {location.get("googleMapsUrl") && (
+                {location.google_maps_url && (
                   <div className="flex items-center mt-4">
                     <Link className="w-5 h-5 text-bats-yellow mr-2 flex-shrink-0" />
                     <a 
-                      href={location.get("googleMapsUrl")} 
+                      href={location.google_maps_url} 
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="text-bats-yellow hover:underline"
@@ -190,10 +165,10 @@ const LocationSection = () => {
                     </a>
                   </div>
                 )}
-                {location.get("category") && (
+                {location.category && (
                   <div className="mt-3 pt-3 border-t border-gray-800">
                     <span className="inline-block px-3 py-1 text-xs bg-bats-blue/20 text-bats-blue rounded-full">
-                      {location.get("category")}
+                      {location.category}
                     </span>
                   </div>
                 )}

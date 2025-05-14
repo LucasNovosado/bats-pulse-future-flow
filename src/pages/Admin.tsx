@@ -1,56 +1,73 @@
 
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Parse from "parse";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const Admin = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [parseReady, setParseReady] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Check if Parse is initialized
   useEffect(() => {
-    const checkParseInitialization = () => {
+    const checkAuth = async () => {
       try {
-        // Simple check to see if Parse is initialized
-        if (Parse.applicationId) {
-          setParseReady(true);
-        } else {
-          // If not ready, check again after a short delay
-          setTimeout(checkParseInitialization, 500);
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          throw error;
         }
+        
+        if (!data.session) {
+          // Redirecionar para login se não estiver autenticado
+          navigate("/admin/login");
+          return;
+        }
+        
+        // Se chegou aqui, está autenticado
+        setIsLoading(false);
       } catch (error) {
-        setTimeout(checkParseInitialization, 500);
+        console.error("Erro ao verificar autenticação:", error);
+        toast({
+          title: "Erro de autenticação",
+          description: "Por favor, faça login novamente",
+          variant: "destructive",
+        });
+        navigate("/admin/login");
       }
     };
     
-    checkParseInitialization();
-  }, []);
-
-  useEffect(() => {
-    // Only check login status when Parse is ready
-    if (!parseReady) return;
+    checkAuth();
     
-    // Check if user is logged in
-    const currentUser = Parse.User.current();
-    if (!currentUser) {
-      navigate("/admin/login");
-      return;
-    }
-
+    // Monitorar mudanças no estado de autenticação
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (event === "SIGNED_OUT") {
+          navigate("/admin/login");
+        } else if (!session) {
+          navigate("/admin/login");
+        }
+      }
+    );
+    
     // Update page title
     document.title = "Painel Administrativo | Bats Energy Drink";
-  }, [navigate, parseReady]);
+    
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, [navigate, toast]);
 
-  return parseReady ? <AdminLayout /> : (
+  return isLoading ? (
     <div className="min-h-screen flex items-center justify-center bg-bats-dark">
       <div className="animate-pulse flex flex-col items-center">
         <div className="h-12 w-12 bg-bats-yellow/50 rounded-full animate-spin mb-4"></div>
         <p className="text-gray-400">Carregando sistema...</p>
       </div>
     </div>
+  ) : (
+    <AdminLayout />
   );
 };
 

@@ -1,79 +1,46 @@
 
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import Parse from "parse";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const AdminLogin = () => {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [parseReady, setParseReady] = useState(false);
   const [loginAttempt, setLoginAttempt] = useState(0);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Check if Parse is initialized
+  // Check if user is already logged in
   useEffect(() => {
-    const checkParseInitialization = () => {
+    const checkAuthStatus = async () => {
       try {
-        // Simple check to see if Parse is initialized
-        if (Parse.applicationId) {
-          setParseReady(true);
-          console.log("Parse is ready in AdminLogin with App ID:", Parse.applicationId);
-        } else {
-          // If not ready, check again after a short delay
-          console.log("Parse not ready yet, checking again...");
-          setTimeout(checkParseInitialization, 500);
+        const { data } = await supabase.auth.getSession();
+        if (data?.session) {
+          console.log("User already logged in");
+          navigate("/admin");
         }
       } catch (error) {
-        console.error("Error checking Parse initialization:", error);
-        setTimeout(checkParseInitialization, 500);
+        console.error("Error checking auth status:", error);
       }
     };
     
-    checkParseInitialization();
-  }, []);
-
-  useEffect(() => {
-    // Only check login status when Parse is ready
-    if (!parseReady) return;
-    
-    try {
-      // Check if user is already logged in
-      const currentUser = Parse.User.current();
-      if (currentUser) {
-        console.log("User already logged in:", currentUser.getUsername());
-        navigate("/admin");
-      } else {
-        console.log("No user currently logged in");
-      }
-    } catch (error) {
-      console.error("Error checking current user:", error);
-    }
+    checkAuthStatus();
     
     // Update page title
     document.title = "Login Administrativo | Bats Energy Drink";
-  }, [navigate, parseReady]);
+  }, [navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!parseReady) {
-      toast({
-        title: "Sistema inicializando",
-        description: "Aguarde enquanto o sistema é inicializado",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (!username || !password) {
+    if (!email || !password) {
       toast({
         title: "Campos obrigatórios",
         description: "Por favor, preencha todos os campos",
@@ -86,12 +53,17 @@ const AdminLogin = () => {
     setLoginAttempt(prev => prev + 1);
     
     try {
-      console.log(`Tentativa de login ${loginAttempt + 1} para usuário: ${username}`);
-      console.log("Verificando credenciais no Back4App com App ID:", Parse.applicationId);
+      console.log(`Tentativa de login ${loginAttempt + 1} para usuário: ${email}`);
       
-      // Verificando credenciais na Back4App
-      const user = await Parse.User.logIn(username, password);
-      console.log("Login bem-sucedido, objeto de usuário:", user.id);
+      // Autenticação com Supabase
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      
+      if (error) throw error;
+      
+      console.log("Login bem-sucedido, objeto de usuário:", data.user?.id);
       
       toast({
         title: "Login realizado com sucesso",
@@ -103,22 +75,20 @@ const AdminLogin = () => {
       
       // Log detalhado do erro para diagnóstico
       if (error.code) {
-        console.log(`Código de erro Parse: ${error.code}`);
+        console.log(`Código de erro: ${error.code}`);
       }
       
       if (error.message) {
         console.log(`Mensagem de erro: ${error.message}`);
       }
       
-      let errorMessage = "Credenciais inválidas. Verifique seu usuário e senha.";
+      let errorMessage = "Credenciais inválidas. Verifique seu e-mail e senha.";
       
       // Mensagens específicas para erros comuns
-      if (error.code === 101) {
-        errorMessage = "Usuário ou senha inválidos. Verifique suas credenciais.";
-      } else if (error.code === 209) {
-        errorMessage = "Sessão inválida. Por favor, faça login novamente.";
-      } else if (error.message && error.message.includes("invalid JSON")) {
-        errorMessage = "Erro de comunicação com o servidor. Verifique sua conexão.";
+      if (error.message && error.message.includes("Invalid login")) {
+        errorMessage = "E-mail ou senha inválidos. Verifique suas credenciais.";
+      } else if (error.message && error.message.includes("Email not confirmed")) {
+        errorMessage = "E-mail não confirmado. Verifique sua caixa de entrada.";
       }
       
       toast({
@@ -150,12 +120,13 @@ const AdminLogin = () => {
         <div className="glow-card bg-bats-dark/70 backdrop-blur-xl p-8">
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="username">Usuário</Label>
+              <Label htmlFor="email">E-mail</Label>
               <Input
-                id="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Digite seu usuário"
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Digite seu e-mail"
                 className="bg-bats-dark/50 border-bats-blue/30"
               />
             </div>
@@ -181,16 +152,9 @@ const AdminLogin = () => {
               </div>
             </div>
             
-            {!parseReady && (
-              <div className="text-center py-2">
-                <div className="inline-block h-4 w-4 border-2 border-bats-yellow/30 border-t-bats-yellow rounded-full animate-spin mr-2"></div>
-                <span className="text-gray-400 text-sm">Inicializando sistema...</span>
-              </div>
-            )}
-            
             <Button 
               type="submit" 
-              disabled={isLoading || !parseReady} 
+              disabled={isLoading} 
               className="w-full bg-gradient-to-r from-bats-yellow to-bats-blue hover:from-bats-yellow/90 hover:to-bats-blue/90 text-black font-bold"
             >
               {isLoading ? "Entrando..." : "Entrar"}

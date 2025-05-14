@@ -9,7 +9,54 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      partners: {
+        Row: {
+          address: string | null
+          category: string | null
+          city: string | null
+          created_at: string
+          district: string | null
+          featured: boolean | null
+          google_maps_url: string | null
+          id: string
+          name: string
+          phone: string | null
+          state: string | null
+          status: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          category?: string | null
+          city?: string | null
+          created_at?: string
+          district?: string | null
+          featured?: boolean | null
+          google_maps_url?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+          state?: string | null
+          status?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          category?: string | null
+          city?: string | null
+          created_at?: string
+          district?: string | null
+          featured?: boolean | null
+          google_maps_url?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          state?: string | null
+          status?: boolean | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
