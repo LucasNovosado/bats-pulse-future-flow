@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect } from "react";
-import Parse from "parse";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Form,
   FormControl,
@@ -36,8 +36,6 @@ const formSchema = z.object({
   googleMapsUrl: z.string().url("URL inválida").or(z.string().length(0)),
   featured: z.boolean().default(false),
   status: z.boolean().default(true),
-  latitude: z.string().optional(),
-  longitude: z.string().optional(),
 });
 
 const PartnerForm: React.FC<PartnerFormProps> = ({ 
@@ -62,36 +60,23 @@ const PartnerForm: React.FC<PartnerFormProps> = ({
       googleMapsUrl: "",
       featured: false,
       status: true,
-      latitude: "",
-      longitude: "",
     },
   });
 
   useEffect(() => {
     if (partner && isEditing) {
-      // Get coordinates if available
-      let latitude = "";
-      let longitude = "";
-      const coordinates = partner.get("coordinates");
-      if (coordinates) {
-        latitude = coordinates.latitude?.toString() || "";
-        longitude = coordinates.longitude?.toString() || "";
-      }
-      
       form.reset({
-        name: partner.get("name") || "",
-        address: partner.get("address") || "",
-        district: partner.get("district") || "",
-        city: partner.get("city") || "",
-        state: partner.get("state") || "",
-        cep: partner.get("cep") || partner.get("zipCode") || "",
-        phone: partner.get("phone") || "",
-        category: partner.get("category") || "",
-        googleMapsUrl: partner.get("googleMapsUrl") || "",
-        featured: partner.get("featured") || false,
-        status: partner.get("status") !== false, // default to true if undefined
-        latitude,
-        longitude,
+        name: partner.name || "",
+        address: partner.address || "",
+        district: partner.district || "",
+        city: partner.city || "",
+        state: partner.state || "",
+        cep: partner.cep || "",
+        phone: partner.phone || "",
+        category: partner.category || "",
+        googleMapsUrl: partner.google_maps_url || "",
+        featured: partner.featured || false,
+        status: partner.status !== false, // default to true if undefined
       });
     }
   }, [partner, isEditing, form]);
@@ -100,44 +85,37 @@ const PartnerForm: React.FC<PartnerFormProps> = ({
     setIsSubmitting(true);
     
     try {
-      const Partner = Parse.Object.extend("Partner");
-      let partnerObject;
+      const partnerData = {
+        name: values.name,
+        address: values.address,
+        district: values.district,
+        city: values.city,
+        state: values.state,
+        phone: values.phone || null,
+        category: values.category || null,
+        google_maps_url: values.googleMapsUrl || null,
+        featured: values.featured,
+        status: values.status,
+      };
+      
+      let result;
       
       if (isEditing && partner) {
-        partnerObject = partner;
+        // Atualizar parceiro existente
+        result = await supabase
+          .from('partners')
+          .update(partnerData)
+          .eq('id', partner.id);
       } else {
-        partnerObject = new Partner();
+        // Criar novo parceiro
+        result = await supabase
+          .from('partners')
+          .insert([partnerData]);
       }
       
-      // Convert coordinates to Parse.GeoPoint if both values are provided
-      let coordinates = null;
-      if (values.latitude && values.longitude) {
-        const lat = parseFloat(values.latitude);
-        const lng = parseFloat(values.longitude);
-        if (!isNaN(lat) && !isNaN(lng)) {
-          coordinates = new Parse.GeoPoint({ latitude: lat, longitude: lng });
-        }
+      if (result.error) {
+        throw result.error;
       }
-
-      // Set all fields
-      partnerObject.set("name", values.name);
-      partnerObject.set("address", values.address);
-      partnerObject.set("district", values.district);
-      partnerObject.set("city", values.city);
-      partnerObject.set("state", values.state);
-      partnerObject.set("cep", values.cep);
-      partnerObject.set("zipCode", values.cep); // To maintain compatibility
-      partnerObject.set("phone", values.phone || null);
-      partnerObject.set("category", values.category || null);
-      partnerObject.set("googleMapsUrl", values.googleMapsUrl || null);
-      partnerObject.set("featured", values.featured);
-      partnerObject.set("status", values.status);
-      
-      if (coordinates) {
-        partnerObject.set("coordinates", coordinates);
-      }
-      
-      await partnerObject.save();
       
       toast({
         title: isEditing ? "Revendedor atualizado" : "Revendedor adicionado",
@@ -371,44 +349,6 @@ const PartnerForm: React.FC<PartnerFormProps> = ({
                 </FormItem>
               )}
             />
-
-            {/* Coordenadas */}
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="latitude"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Latitude</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="-23.550520" 
-                        className="bg-bats-dark/50 border-bats-blue/30"
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="longitude"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Longitude</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="-46.633308" 
-                        className="bg-bats-dark/50 border-bats-blue/30"
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
           </div>
 
           {/* Status e Destaque */}
